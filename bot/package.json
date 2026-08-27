@@ -1,0 +1,16 @@
+{
+  "name": "dropship-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for the dropshipping catalog",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.65.1"
+  }
+}

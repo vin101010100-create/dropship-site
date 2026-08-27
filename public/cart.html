@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - Dropship Store</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Telegram WebApp JS -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">Dropship Store</a>
+            <a href="cart.html" class="cart-link">
+                Cart <span class="cart-count" id="cart-count">0</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="page-title">Your Cart</h1>
+
+        <div id="message" class="alert" style="display: none;"></div>
+
+        <div id="cart-items">
+            <!-- Cart items are loaded here by app.js -->
+        </div>
+
+        <div class="card mt-16" id="checkout-form" style="padding: 16px;">
+            <h2>Checkout</h2>
+            <form id="order-form">
+                <div class="form-group">
+                    <label for="customer-name">Full Name</label>
+                    <input type="text" id="customer-name" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="customer-phone">Phone Number</label>
+                    <input type="tel" id="customer-phone" class="form-control" placeholder="+1 234 567 890" required>
+                </div>
+                <div class="form-group">
+                    <label for="customer-address">Delivery Address</label>
+                    <textarea id="customer-address" class="form-control" rows="3" placeholder="123 Main St, City, Country" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+            </form>
+        </div>
+
+        <a href="index.html" class="btn btn-secondary btn-block mt-16">Back to Catalog</a>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
