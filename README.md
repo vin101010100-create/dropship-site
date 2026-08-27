@@ -14,7 +14,7 @@ A simple MVP dropshipping catalog website with Telegram bot integration.
 ## Tech Stack
 
 - Backend: Node.js + Express
-- Database: SQLite (`better-sqlite3`)
+- Database: SQLite (`sqlite3`)
 - Frontend: Plain HTML, CSS, JavaScript
 - Telegram Bot: `node-telegram-bot-api`
 

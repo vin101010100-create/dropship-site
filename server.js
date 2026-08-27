@@ -24,9 +24,9 @@ app.get('/health', (req, res) => {
 });
 
 // GET /api/products - return all products as JSON
-app.get('/api/products', (req, res) => {
+app.get('/api/products', async (req, res) => {
     try {
-        const products = statements.getAllProducts.all();
+        const products = await statements.getAllProducts();
         res.json(products);
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -35,9 +35,9 @@ app.get('/api/products', (req, res) => {
 });
 
 // GET /api/products/:id - return a single product by ID
-app.get('/api/products/:id', (req, res) => {
+app.get('/api/products/:id', async (req, res) => {
     try {
-        const product = statements.getProductById.get(req.params.id);
+        const product = await statements.getProductById(req.params.id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
@@ -49,7 +49,7 @@ app.get('/api/products/:id', (req, res) => {
 });
 
 // POST /api/orders - create a new order
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
     try {
         const { product_id, customer_name, phone, address } = req.body;
 
@@ -59,7 +59,7 @@ app.post('/api/orders', (req, res) => {
         }
 
         // Look up the product to include its name in the order
-        const product = statements.getProductById.get(product_id);
+        const product = await statements.getProductById(product_id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
@@ -84,7 +84,7 @@ app.post('/api/orders', (req, res) => {
         }
 
         // Insert the order into the database
-        const result = statements.createOrder.run(
+        const result = await statements.createOrder(
             userId,
             userName,
             product_id,
@@ -95,7 +95,7 @@ app.post('/api/orders', (req, res) => {
         );
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: result.lastID,
             product_id,
             product_name: product.name,
             customer_name,
@@ -110,9 +110,9 @@ app.post('/api/orders', (req, res) => {
 });
 
 // GET /api/orders - return all orders (for the admin panel)
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', async (req, res) => {
     try {
-        const orders = statements.getAllOrders.all();
+        const orders = await statements.getAllOrders();
         res.json(orders);
     } catch (error) {
         console.error('Error fetching orders:', error);
@@ -121,7 +121,7 @@ app.get('/api/orders', (req, res) => {
 });
 
 // PUT /api/orders/:id/status - update order status
-app.put('/api/orders/:id/status', (req, res) => {
+app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
         const allowedStatuses = ['pending', 'processing', 'shipped', 'cancelled'];
@@ -130,7 +130,7 @@ app.put('/api/orders/:id/status', (req, res) => {
             return res.status(400).json({ error: 'Invalid status' });
         }
 
-        const result = statements.updateOrderStatus.run(status, req.params.id);
+        const result = await statements.updateOrderStatus(status, req.params.id);
         if (result.changes === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }

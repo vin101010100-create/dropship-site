@@ -9,7 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
+    "sqlite3": "^5.1.7",
     "dotenv": "^16.4.5",
     "node-telegram-bot-api": "^0.65.1"
   }

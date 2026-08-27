@@ -48,7 +48,7 @@ let lastNotifiedOrderId = 0;
 async function notifyAdminOfNewOrders() {
     try {
         // Get the most recent orders
-        const orders = statements.getAllOrders.all();
+        const orders = await statements.getAllOrders();
 
         for (const order of orders) {
             if (order.id > lastNotifiedOrderId) {
@@ -80,10 +80,16 @@ async function notifyAdminOfNewOrders() {
 }
 
 // Initial poll to avoid notifying about old orders on restart
-const initialOrders = statements.getAllOrders.all();
-if (initialOrders.length > 0) {
-    lastNotifiedOrderId = Math.max(...initialOrders.map(o => o.id));
-}
+(async function initializeLastNotifiedOrderId() {
+    try {
+        const initialOrders = await statements.getAllOrders();
+        if (initialOrders.length > 0) {
+            lastNotifiedOrderId = Math.max(...initialOrders.map(o => o.id));
+        }
+    } catch (error) {
+        console.error('Error initializing last notified order id:', error);
+    }
+})();
 
 // Check for new orders every 5 seconds
 setInterval(notifyAdminOfNewOrders, 5000);
