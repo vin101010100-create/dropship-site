@@ -108,9 +108,7 @@ WEBAPP_URL=https://your-app.railway.app
 
 ## Running the Project
 
-You need to run two separate processes.
-
-### 1. Start the server
+A single command starts both the Express server and the Telegram bot.
 
 ```bash
 node server.js
@@ -118,9 +116,7 @@ node server.js
 
 The server will be available at `http://localhost:3000`.
 
-### 2. Start the bot
-
-In a new terminal:
+If you want to run only the bot (for example, during local development):
 
 ```bash
 node bot/bot.js
@@ -137,13 +133,22 @@ Open `http://localhost:3000/admin.html` in your browser.
 
 1. Push the project to a GitHub repository.
 2. Go to [Railway](https://railway.app/) and create a new project from GitHub.
-3. Add the environment variables from your `.env` file in the Railway dashboard.
-4. Set the start command to `node server.js`.
-5. Railway will provide a public URL - put that URL in `WEBAPP_URL`.
-6. Run the bot as a separate service or process with `node bot/bot.js`, using the same environment variables.
+3. Add the environment variables from your `.env` file in the Railway dashboard:
+   - `BOT_TOKEN`
+   - `ADMIN_CHAT_ID`
+   - `WEBAPP_URL` (your Railway public URL, e.g. `https://your-app.railway.app`)
+   - `ADMIN_PASSWORD`
+4. Make sure the start command is `node server.js` (or `npm start`).
+   This starts both the server and the Telegram bot in the same process.
+5. Generate a public URL in the Railway dashboard and copy it into `WEBAPP_URL`.
+
+> **Important:** Railway's filesystem is ephemeral. Without a persistent volume,
+> the SQLite database (`dropship.db`) will be reset on every redeploy or restart.
+> For production, either add a Railway volume and set `DB_PATH` to a folder inside it,
+> or switch to a managed database like PostgreSQL.
 
 ## Notes
 
 - The SQLite database file `dropship.db` is created automatically on first run.
-- The bot and server share the same database file, so they can run as separate processes.
+- The bot and server share the same database file and can run in a single process.
 - The frontend works both inside Telegram WebApp and in a regular browser.

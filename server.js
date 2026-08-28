@@ -5,6 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const { statements } = require('./database');
+const { startBot, stopBot } = require('./bot/bot');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -143,6 +144,27 @@ app.put('/api/orders/:id/status', async (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+// Start the Telegram bot in the same process.
+// This keeps the deployment simple: one command starts both the API and the bot.
+const bot = startBot();
+
+// Graceful shutdown so the bot stops polling when Railway restarts the service
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    stopBot(bot);
+    server.close(() => {
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    stopBot(bot);
+    server.close(() => {
+        process.exit(0);
+    });
 });

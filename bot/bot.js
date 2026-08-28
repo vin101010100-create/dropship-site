@@ -7,55 +7,67 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
-if (!BOT_TOKEN) {
-    console.error('BOT_TOKEN is missing. Please set it in the .env file.');
-    process.exit(1);
-}
+let intervalId = null;
 
-if (!WEBAPP_URL) {
-    console.error('WEBAPP_URL is missing. Please set it in the .env file.');
-    process.exit(1);
-}
+function startBot() {
+    if (!BOT_TOKEN) {
+        console.warn('BOT_TOKEN is not set. Telegram bot will not be started.');
+        return null;
+    }
 
-// Create the bot using polling
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    if (!WEBAPP_URL) {
+        console.warn('WEBAPP_URL is not set. Telegram bot will not be started.');
+        return null;
+    }
 
-console.log('Telegram bot is running...');
-
-// /start command - welcome message with WebApp button
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-
-    bot.sendMessage(chatId, 'Welcome to our catalog! Tap the button below to browse products.', {
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    {
-                        text: 'Open Catalog',
-                        web_app: { url: WEBAPP_URL }
-                    }
-                ]
-            ]
-        }
-    });
-});
-
-// Poll the database every few seconds to detect new orders and notify the admin.
-// This is a simple MVP approach so the bot and server can stay separate processes
-// while sharing the same SQLite database file.
-let lastNotifiedOrderId = 0;
-
-async function notifyAdminOfNewOrders() {
+    let bot;
     try {
-        // Get the most recent orders
-        const orders = await statements.getAllOrders();
+        bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    } catch (error) {
+        console.error('Failed to create Telegram bot:', error.message);
+        return null;
+    }
 
-        for (const order of orders) {
-            if (order.id > lastNotifiedOrderId) {
-                lastNotifiedOrderId = order.id;
+    console.log('Telegram bot is running...');
 
-                if (ADMIN_CHAT_ID) {
-                    const message = `
+    bot.on('polling_error', (error) => {
+        console.error('Telegram bot polling error:', error.message);
+    });
+
+    // /start command - welcome message with WebApp button
+    bot.onText(/\/start/, (msg) => {
+        const chatId = msg.chat.id;
+
+        bot.sendMessage(chatId, 'Welcome to our catalog! Tap the button below to browse products.', {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: 'Open Catalog',
+                            web_app: { url: WEBAPP_URL }
+                        }
+                    ]
+                ]
+            }
+        });
+    });
+
+    // Poll the database every few seconds to detect new orders and notify the admin.
+    // This is a simple MVP approach so the bot and server can stay separate processes
+    // while sharing the same SQLite database file.
+    let lastNotifiedOrderId = 0;
+
+    async function notifyAdminOfNewOrders() {
+        try {
+            // Get the most recent orders
+            const orders = await statements.getAllOrders();
+
+            for (const order of orders) {
+                if (order.id > lastNotifiedOrderId) {
+                    lastNotifiedOrderId = order.id;
+
+                    if (ADMIN_CHAT_ID) {
+                        const message = `
 🛒 <b>New Order #${order.id}</b>
 
 📦 Product: ${order.product_name}
@@ -64,32 +76,52 @@ async function notifyAdminOfNewOrders() {
 🏠 Address: ${order.address}
 🕒 Date: ${order.created_at}
 🚀 Status: ${order.status}
-                    `.trim();
+                        `.trim();
 
-                    try {
-                        await bot.sendMessage(ADMIN_CHAT_ID, message, { parse_mode: 'HTML' });
-                    } catch (sendError) {
-                        console.error('Failed to send admin notification:', sendError.message);
+                        try {
+                            await bot.sendMessage(ADMIN_CHAT_ID, message, { parse_mode: 'HTML' });
+                        } catch (sendError) {
+                            console.error('Failed to send admin notification:', sendError.message);
+                        }
                     }
                 }
             }
+        } catch (error) {
+            console.error('Error polling orders for notifications:', error);
         }
-    } catch (error) {
-        console.error('Error polling orders for notifications:', error);
+    }
+
+    // Initial poll to avoid notifying about old orders on restart
+    (async function initializeLastNotifiedOrderId() {
+        try {
+            const initialOrders = await statements.getAllOrders();
+            if (initialOrders.length > 0) {
+                lastNotifiedOrderId = Math.max(...initialOrders.map(o => o.id));
+            }
+        } catch (error) {
+            console.error('Error initializing last notified order id:', error);
+        }
+    })();
+
+    // Check for new orders every 5 seconds
+    intervalId = setInterval(notifyAdminOfNewOrders, 5000);
+
+    return bot;
+}
+
+function stopBot(bot) {
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+    if (bot) {
+        bot.stopPolling();
     }
 }
 
-// Initial poll to avoid notifying about old orders on restart
-(async function initializeLastNotifiedOrderId() {
-    try {
-        const initialOrders = await statements.getAllOrders();
-        if (initialOrders.length > 0) {
-            lastNotifiedOrderId = Math.max(...initialOrders.map(o => o.id));
-        }
-    } catch (error) {
-        console.error('Error initializing last notified order id:', error);
-    }
-})();
+// If this file is run directly, start the bot standalone
+if (require.main === module) {
+    startBot();
+}
 
-// Check for new orders every 5 seconds
-setInterval(notifyAdminOfNewOrders, 5000);
+module.exports = { startBot, stopBot };
